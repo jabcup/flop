@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flop — Póquer Universitario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,300;1,9..144,400&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --felt: #0d3b2e;
+    --felt-light: #145040;
+    --felt-dark: #07241b;
+    --cream: #f0e6d2;
+    --cream-dim: #c8bea8;
+    --gold: #d4a04a;
+    --gold-bright: #f0c060;
+    --red: #c83838;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--felt-dark);
+    color: var(--cream);
+    font-family: 'Fraunces', serif;
+    overflow: hidden;
+  }
+
+  .deck {
+    height: 100vh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+  }
+  .deck::-webkit-scrollbar { display: none; }
+
+  .slide {
+    height: 100vh;
+    width: 100vw;
+    scroll-snap-align: start;
+    position: relative;
+    padding: 5vh 7vw;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .slide::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at top left, rgba(212, 160, 74, 0.08), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(20, 80, 64, 0.4), transparent 50%);
+    pointer-events: none;
+  }
+
+  .slide::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .slide-content {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .slide-meta {
+    position: absolute;
+    top: 4vh;
+    right: 7vw;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    z-index: 3;
+  }
+
+  .slide-num {
+    position: absolute;
+    bottom: 3.5vh;
+    left: 7vw;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--cream-dim);
+    z-index: 3;
+  }
+
+  /* COVER */
+  .cover {
+    background: var(--felt);
+    justify-content: center;
+  }
+
+  .cover-suits {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .suit {
+    position: absolute;
+    font-size: 16vw;
+    color: rgba(240, 230, 210, 0.045);
+    font-family: serif;
+    line-height: 1;
+    animation: drift 18s ease-in-out infinite;
+  }
+  .suit.s1 { top: 12%; left: 6%; transform: rotate(-15deg); }
+  .suit.s2 { top: 58%; left: 10%; transform: rotate(20deg); color: rgba(200, 56, 56, 0.05); animation-delay: -4s; }
+  .suit.s3 { top: 18%; right: 8%; transform: rotate(25deg); color: rgba(200, 56, 56, 0.05); animation-delay: -8s; }
+  .suit.s4 { bottom: 10%; right: 12%; transform: rotate(-10deg); animation-delay: -12s; }
+
+  @keyframes drift {
+    0%, 100% { transform: translate(0, 0) rotate(var(--r, 0deg)); }
+    50% { transform: translate(10px, -10px) rotate(calc(var(--r, 0deg) + 5deg)); }
+  }
+
+  .cover-content {
+    text-align: center;
+    z-index: 3;
+    position: relative;
+  }
+
+  .cover-kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 2vh;
+  }
+
+  .cover-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(7rem, 22vw, 22rem);
+    line-height: 0.85;
+    letter-spacing: -0.05em;
+    color: var(--cream);
+    font-variation-settings: "opsz" 144;
+    text-shadow: 0 4px 40px rgba(0,0,0,0.4);
+  }
+
+  .cover-sub {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(1.1rem, 2.2vw, 1.8rem);
+    color: var(--gold);
+    margin-top: 2vh;
+    letter-spacing: 0.01em;
+  }
+
+  .cover-line {
+    width: 60px;
+    height: 1px;
+    background: var(--gold);
+    margin: 4vh auto;
+  }
+
+  .cover-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--cream-dim);
+    text-transform: uppercase;
+  }
+
+  /* HEADER */
+  .slide-header {
+    display: flex;
+    align-items: baseline;
+    gap: 2rem;
+    margin-bottom: 4vh;
+    border-bottom: 1px solid rgba(212, 160, 74, 0.3);
+    padding-bottom: 1.8vh;
+  }
+
+  .slide-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    font-weight: 500;
+  }
+
+  .slide-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: clamp(2.2rem, 4.5vw, 4rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--cream);
+    font-variation-settings: "opsz" 100;
+  }
+
+  .slide-title em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--gold);
+  }
+
+  .body-text {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(1rem, 1.3vw, 1.2rem);
+    line-height: 1.6;
+    color: var(--cream-dim);
+    font-weight: 400;
+  }
+  .body-text strong { color: var(--cream); font-weight: 500; }
+
+  /* STACK */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .stack-card {
+    background: rgba(20, 80, 64, 0.3);
+    border: 1px solid rgba(212, 160, 74, 0.2);
+    padding: 1.8rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    transition: all 0.3s;
+  }
+
+  .stack-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+    background: rgba(20, 80, 64, 0.5);
+  }
+
+  .stack-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+
+  .stack-name {
+    font-family: 'Fraunces', serif;
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 0.5rem;
+    line-height: 1;
+  }
+
+  .stack-desc {
+    font-family: 'Fraunces', serif;
+    font-size: 0.92rem;
+    color: var(--cream-dim);
+    line-height: 1.4;
+  }
+
+  .stack-foot {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--gold);
+    margin-top: 1rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ARCHITECTURE */
+  .arch {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5vh;
+    min-height: 0;
+  }
+
+  .arch-flow {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .arch-node {
+    flex: 1;
+    background: rgba(20, 80, 64, 0.35);
+    border: 1px solid var(--gold);
+    padding: 2rem 1.5rem;
+    text-align: center;
+    position: relative;
+  }
+
+  .arch-node-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  .arch-node-name {
+    font-family: 'Fraunces', serif;
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--cream);
+    line-height: 1;
+  }
+
+  .arch-node-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--cream-dim);
+    margin-top: 0.6rem;
+  }
+
+  .arch-arrow {
+    flex: 0 0 auto;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--gold);
+    font-size: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 90px;
+  }
+
+  .arch-arrow span {
+    font-size: 0.65rem;
+    color: var(--cream-dim);
+    margin-top: 0.4rem;
+    letter-spacing: 0.1em;
+  }
+
+  .arch-notes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+
+  .arch-note {
+    border-left: 2px solid var(--gold);
+    padding-left: 1.2rem;
+  }
+
+  .arch-note-title {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
+
+  .arch-note-body {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--cream-dim);
+    line-height: 1.6;
+  }
+  .arch-note-body strong { color: var(--cream); font-weight: 500; }
+
+  /* DB TABLES */
+  .db-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .db-table {
+    background: rgba(7, 36, 27, 0.6);
+    border: 1px solid rgba(212, 160, 74, 0.25);
+    padding: 1.1rem 1.3rem;
+    transition: all 0.3s;
+  }
+
+  .db-table:hover {
+    border-color: var(--gold);
+    background: rgba(20, 80, 64, 0.4);
+  }
+
+  .db-table-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    color: var(--gold-bright);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px dashed rgba(212, 160, 74, 0.3);
+    padding-bottom: 0.4rem;
+  }
+
+  .db-fields {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--cream-dim);
+    line-height: 1.65;
+  }
+
+  .db-fields .pk { color: var(--gold); font-weight: 500; }
+  .db-fields .fk { color: #9bc7a0; }
+
+  /* TRIGGERS */
+  .triggers {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: center;
+    min-height: 0;
+  }
+
+  .trigger {
+    display: grid;
+    grid-template-columns: 70px 1fr 80px 1fr;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.6rem 0;
+    border-bottom: 1px solid rgba(212, 160, 74, 0.15);
+  }
+  .trigger:last-child { border-bottom: none; }
+
+  .trigger-num {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 2.6rem;
+    color: var(--gold);
+    font-weight: 300;
+    line-height: 1;
+  }
+
+  .trigger-event {
+    font-family: 'Fraunces', serif;
+    font-size: 1.25rem;
+    color: var(--cream);
+    font-weight: 500;
+  }
+
+  .trigger-arrow {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--gold);
+    font-size: 1.1rem;
+    text-align: center;
+    letter-spacing: 0.1em;
+  }
+
+  .trigger-action {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--cream-dim);
+    line-height: 1.5;
+  }
+
+  /* PROCEDURES */
+  .proc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.9rem;
+    flex: 1;
+    align-content: start;
+    min-height: 0;
+  }
+
+  .proc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--cream);
+    padding: 0.9rem 1rem;
+    border: 1px solid rgba(212, 160, 74, 0.2);
+    background: rgba(20, 80, 64, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    transition: all 0.25s;
+  }
+
+  .proc:hover {
+    border-color: var(--gold);
+    color: var(--gold-bright);
+  }
+
+  .proc::before {
+    content: '◆';
+    color: var(--gold);
+    font-size: 0.55rem;
+  }
+
+  /* DECISIONS */
+  .decisions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem 3rem;
+    flex: 1;
+    min-height: 0;
+    align-content: start;
+  }
+
+  .decision {
+    border-top: 1px solid var(--gold);
+    padding-top: 1.2rem;
+  }
+
+  .decision-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    margin-bottom: 0.6rem;
+    text-transform: uppercase;
+  }
+
+  .decision-text {
+    font-family: 'Fraunces', serif;
+    font-size: 1.25rem;
+    line-height: 1.45;
+    color: var(--cream);
+    font-weight: 400;
+    margin-bottom: 0.7rem;
+  }
+
+  .decision-text em {
+    font-style: italic;
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  .decision-detail {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--cream-dim);
+    line-height: 1.6;
+  }
+  .decision-detail code {
+    color: var(--gold);
+    background: rgba(212, 160, 74, 0.08);
+    padding: 0.1em 0.35em;
+  }
+
+  /* PENDING */
+  .pending {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 980px;
+    min-height: 0;
+  }
+
+  .pending-item {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    padding: 1.8rem 0;
+    border-bottom: 1px solid rgba(212, 160, 74, 0.15);
+  }
+  .pending-item:last-child { border-bottom: none; }
+
+  .pending-q {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 3.5rem;
+    color: var(--gold);
+    line-height: 0.8;
+    flex: 0 0 70px;
+  }
+
+  .pending-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.3rem;
+    color: var(--cream);
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+  }
+
+  .pending-desc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--cream-dim);
+    line-height: 1.6;
+  }
+
+  /* NAV DOTS */
+  .nav-dots {
+    position: fixed;
+    right: 2vw;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    z-index: 100;
+  }
+
+  .nav-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1px solid var(--gold);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s;
+    padding: 0;
+  }
+
+  .nav-dot:hover { background: var(--gold); }
+  .nav-dot.active {
+    background: var(--gold);
+    transform: scale(1.4);
+  }
+
+  /* CLOSING */
+  .closing {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+
+  .closing-suits {
+    font-size: 2.5rem;
+    color: var(--gold);
+    letter-spacing: 0.6rem;
+    margin-bottom: 3vh;
+  }
+
+  .closing-title {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(2.5rem, 6.5vw, 5.5rem);
+    color: var(--cream);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
+  .closing-title em {
+    font-style: normal;
+    font-weight: 900;
+    color: var(--gold);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .slide.in-view .anim {
+    animation: fadeUp 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+
+  .slide.in-view .anim:nth-child(1) { animation-delay: 0.05s; }
+  .slide.in-view .anim:nth-child(2) { animation-delay: 0.18s; }
+  .slide.in-view .anim:nth-child(3) { animation-delay: 0.31s; }
+  .slide.in-view .anim:nth-child(4) { animation-delay: 0.44s; }
+  .slide.in-view .anim:nth-child(5) { animation-delay: 0.57s; }
+  .slide.in-view .anim:nth-child(6) { animation-delay: 0.70s; }
+  .slide.in-view .anim:nth-child(7) { animation-delay: 0.83s; }
+  .slide.in-view .anim:nth-child(8) { animation-delay: 0.96s; }
+  .slide.in-view .anim:nth-child(9) { animation-delay: 1.09s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .stack-grid, .db-grid, .arch-notes, .decisions { grid-template-columns: 1fr; }
+    .proc-grid { grid-template-columns: repeat(2, 1fr); }
+    .arch-flow { flex-direction: column; }
+    .arch-arrow { transform: rotate(90deg); min-height: 40px; }
+  }
+</style>
+</head>
+<body>
+  <nav class="nav-dots" id="navDots" aria-label="Navegación de diapositivas"></nav>
+
+  <main class="deck" id="deck">
+
+    <!-- 01 · COVER -->
+    <section class="slide cover" data-title="Portada">
+      <div class="cover-suits">
+        <div class="suit s1">♠</div>
+        <div class="suit s2">♥</div>
+        <div class="suit s3">♦</div>
+        <div class="suit s4">♣</div>
+      </div>
+      <div class="cover-content">
+        <div class="cover-kicker anim">Tecnología de Bases de Datos · 2025</div>
+        <h1 class="cover-title anim">FLOP</h1>
+        <div class="cover-line anim"></div>
+        <div class="cover-sub anim">Proyecto Póquer Universitario — Texas Hold'em</div>
+        <div class="cover-meta anim" style="margin-top: 4vh;">Cliente de escritorio · Backend REST · SQL Server</div>
+      </div>
+      <div class="slide-num">01 / 10</div>
+    </section>
+
+    <!-- 02 · CONTEXTO -->
+    <section class="slide" data-title="Contexto">
+      <div class="slide-meta">Contexto</div>
+      <div class="slide-content">
+        <div class="slide-header anim">
+          <h2 class="slide-title">El <em>contexto</em></h2>
+        </div>
+        <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 4rem; flex: 1; align-items: center;">
+          <div>
+            <p class="body-text anim" style="font-size: clamp(1.2rem, 1.7vw, 1.6rem); line-height: 1.5; color: var(--cream); font-weight: 400;">
+              Un videojuego de póquer <strong>multijugador</strong> Texas Hold'em, con cliente de escritorio y backend con API REST, construido para la materia de <strong>Tecnología de Bases de Datos</strong>.
+            </p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 1.4rem;">
+            <div class="anim" style="display: flex; gap: 1rem; align-items: baseline;">
+              <span style="font-family: 'JetBrains Mono', monospace; color: var(--gold); font-size: 0.85rem;">→</span>
+              <span class="body-text"><strong>Cliente PyGame</strong> de escritorio, multijugador por turnos asíncronos.</span>
+            </div>
+            <div class="anim" style="display: flex; gap: 1rem; align-items: baseline;">
+              <span style="font-family: 'JetBrains Mono', monospace; color: var(--gold); font-size: 0.85rem;">→</span>
+              <span class="body-text"><strong>Backend FastAPI</strong> que expone endpoints REST sobre el estado de cada mano.</span>
+            </div>
+            <div class="anim" style="display: flex; gap: 1rem; align-items: baseline;">
+              <span style="font-family: 'JetBrains Mono', monospace; color: var(--gold); font-size: 0.85rem;">→</span>
+              <span class="body-text"><strong>SQL Server</strong> como fuente de verdad persistente para usuarios, mesas y manos jugadas.</span>
+            </div>
+            <div class="anim" style="display: flex; gap: 1rem; align-items: baseline;">
+              <span style="font-family: 'JetBrains Mono', monospace; color: var(--gold); font-size: 0.85rem;">→</span>
+              <span class="body-text"><strong>Procedimientos almacenados y triggers</strong> centralizan la lógica de datos.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-num">02 / 10</div>
+    </section>
+
+    <!-- 03 · STACK -->
+    <section class="slide" data-title="Stack">
+      <div class="slide-meta">Stack</div>
+      <div class="slide-content">
+        <div class="slide-header anim">
+          <h2 class="slide-title">Stack <em>tecnológico</em></h2>
+        </div>
+        <div class="stack-grid">
+          <div class="stack-card anim">
+            <div>
+              <div class="stack-label">Backend</div>
+              <div class="stack-name">FastAPI</div>
+              <div class="stack-desc">+ Uvicorn. API REST asíncrona que sirve el estado del juego.</div>
+            </div>
+            <div class="stack-foot">Python · ASGI</div>
+          </div>
+          <div class="stack-card anim">
+            <div>
+              <div class="stack-label">Cliente</div>
+              <div class="stack-name">PyGame</div>
+              <div class="stack-desc">Cliente de escritorio. Renderiza mesa, cartas y fichas en tiempo real.</div>
+            </div>
+            <div class="stack-foot">Desktop</div>
+          </div>
+          <div class="stack-card anim">
+            <div>
+              <div class="stack-label">Base de datos</div>
+              <div class="stack-name">SQL Server</div>
+              <div class="stack-desc">Persistencia de usuarios, billeteras, mesas, manos y acciones.</div>
+            </div>
+            <div class="stack-foot">RDBMS</div>
+          </div>
+          <div class="stack-card anim">
+            <div>
+              <div class="stack-label">Conector</div>
+              <div class="stack-name">pyodbc</div>
+              <div class="stack-desc">Driver ODBC que puentea Python con SQL Server.</div>
+            </div>
+            <div class="stack-foot">ODBC bridge</div>
+          </div>
+          <div class="stack-card anim">
+            <div>
+              <div class="stack-label">Evaluación</div>
+              <div class="stack-name">treys</div>
+              <div class="stack-desc">Librería para evaluar manos de póquer y deducir el ganador.</div>
+            </div>
+            <div class="stack-foot">Texas Hold'em</div>
+          </div>
+          <div class="stack-card anim">
+            <div>
+              <div class="stack-label">Comunicación</div>
+              <div class="stack-name">HTTP Polling</div>
+              <div class="stack-desc">El cliente consulta al servidor cada X segundos por el estado actual.</div>
+            </div>
+            <div class="stack-foot">Sin WebSockets</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-num">03 / 10</div>
+    </section>
+
+    <!-- 04 · ARQUITECTURA -->
+    <section class="slide" data-title="Arquitectura">
+      <div class="slide-meta">Arquitectura</div>
+      <div class="slide-content">
+        <div class="slide-header anim">
+          <h2 class="slide-title">Cómo <em>hablan</em> entre sí</h2>
+        </div>
+        <div class="arch">
+          <div class="arch-flow anim">
+            <div class="arch-node">
+              <div class="arch-node-label">Capa 01</div>
+              <div class="arch-node-name">PyGame</div>
+              <div class="arch-node-sub">Cliente desktop</div>
+            </div>
+            <div class="arch-arrow">⇄<span>polling HTTP</span></div>
+            <div class="arch-node">
+              <div class="arch-node-label">Capa 02</div>
+              <div class="arch-node-name">FastAPI</div>
+              <div class="arch-node-sub">API + estado en memoria</div>
+            </div>
+            <div class="arch-arrow">⇄<span>pyodbc</span></div>
+            <div class="arch-node">
+              <div class="arch-node-label">Capa 03</div>
+              <div class="arch-node-name">SQL Server</div>
+              <div class="arch-node-sub">Persistencia</div>
+            </div>
+          </div>
+          <div class="arch-notes">
+            <div class="arch-note anim">
+              <div class="arch-note-title">Durante la mano</div>
+              <div class="arch-note-body">Mazo, turno y pot viven en <strong>memoria</strong> en el backend. No se consulta la BD por cada acción.</div>
+            </div>
+            <div class="arch-note anim">
+              <div class="arch-note-title">Al cerrar la mano</div>
+              <div class="arch-note-body">Se persiste todo de golpe: jugadores, cartas, acciones y resultados, con un único <strong>UPDATE</strong>.</div>
+            </div>
+            <div class="arch-note anim">
+              <div class="arch-note-title">Consultas del cliente</div>
+              <div class="arch-note-body">El cliente hace <strong>polling</strong> cada X segundos para conocer el estado actual de la mesa.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-num">04 / 10</div>
+    </section>
+
+    <!-- 05 · ESQUEMA BD -->
+    <section class="slide" data-title="Esquema BD">
+      <div class="slide-meta">Esquema BD</div>
+      <div class="slide-content">
+        <div class="slide-header anim">
+          <h2 class="slide-title">Esquema de la <em>base de datos</em></h2>
+        </div>
+        <div class="db-grid">
+          <div class="db-table anim">
+            <div class="db-table-name">Usuario</div>
+            <div class="db-fields"><span class="pk">id</span>, username (unique), email (unique), clave (hasheada)</div>
+          </div>
+          <div class="db-table anim">
+            <div class="db-table-name">Billetera</div>
+            <div class="db-fields"><span class="pk">id</span>, <span class="fk">id_usuario</span>, monto_creditos</div>
+          </div>
+          <div class="db-table anim">
+            <div class="db-table-name">Recargas</div>
+            <div class="db-fields"><span class="pk">id</span>, <span class="fk">id_billetera</span>, monto_creditos, monto_bob, numero_tarjeta, es_valida</div>
+          </div>
+          <div class="db-table anim">
+            <div class="db-table-name">Cartas <span style="color:var(--cream-dim); font-weight:400;">(catálogo)</span></div>
+            <div class="db-fields"><span class="pk">id_carta</span>, valor_mostrar, valor · 52 registros estáticos</div>
+          </div>
+          <div class="db-table anim">
+            <div class="db-table-name">Mesa</div>
+            <div class="db-fields"><span class="pk">id</span>, <span class="fk">id_usuario_inicial</span>, fecha_hora_apertura</div>
+          </div>
+          <div class="db-table anim">
+            <div class="db-table-name">Mano</div>
+            <div class="db-fields"><span class="pk">id</span>, <span class="fk">id_mesa</span>, carta_flop_1/2/3, carta_turn, carta_river</div>
+          </div>
+          <div class="db-table anim">
+            <div class="db-table-name">Usuarios_Mano</div>
+            <div class="db-fields"><span class="fk">id_usuario</span>, <span class="fk">id_mano</span>, creditos_entrada, creditos_salida, carta_1, carta_2</div>
+          </div>
+          <div class="db-table anim">
+            <div class="db-table-name">Acciones</div>
+            <div class="db-fields"><span class="pk">id</span>, <span class="fk">id_usuario</span>, <span class="fk">id_mano</span>, <span class="fk">id_tipo_accion</span>, monto (nullable)</div>
+          </div>
+          <div class="db-table anim">
+            <div class="db-table-name">Tipo_Accion <span style="color:var(--cream-dim); font-weight:400;">(catálogo)</span></div>
+            <div class="db-fields"><span class="pk">id</span>, nombre · fold, call, raise, check, all-in</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-num">05 / 10</div>
+    </section>
+
+    <!-- 06 · TRIGGERS -->
+    <section class="slide" data-title="Triggers">
+      <div class="slide-meta">Triggers</div>
+      <div class="slide-content">
+        <div class="slide-header anim">
+          <h2 class="slide-title">Triggers que <em>reaccionan</em> solos</h2>
+        </div>
+        <div class="triggers">
+          <div class="trigger anim">
+            <div class="trigger-num">i</div>
+            <div class="trigger-event">Registro de usuario</div>
+            <div class="trigger-arrow">—→</div>
+            <div class="trigger-action">regalar créditos iniciales en la billetera</div>
+          </div>
+          <div class="trigger anim">
+            <div class="trigger-num">ii</div>
+            <div class="trigger-event">Recarga aprobada</div>
+            <div class="trigger-arrow">—→</div>
+            <div class="trigger-action">aumentar el crédito disponible en billetera</div>
+          </div>
+          <div class="trigger anim">
+            <div class="trigger-num">iii</div>
+            <div class="trigger-event">Apertura de mesa</div>
+            <div class="trigger-arrow">—→</div>
+            <div class="trigger-action">crear automáticamente la primera mano</div>
+          </div>
+          <div class="trigger anim">
+            <div class="trigger-num">iv</div>
+            <div class="trigger-event">Finalización de mano</div>
+            <div class="trigger-arrow">—→</div>
+            <div class="trigger-action">abrir la siguiente mano si quedan jugadores</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-num">06 / 10</div>
+    </section>
+
+    <!-- 07 · PROCEDURES -->
+    <section class="slide" data-title="Procedimientos">
+      <div class="slide-meta">Procedimientos</div>
+      <div class="slide-content">
+        <div class="slide-header anim">
+          <h2 class="slide-title">Procedimientos <em>almacenados</em></h2>
+        </div>
+        <div class="proc-grid">
+          <div class="proc anim">Registrar usuario</div>
+          <div class="proc anim">Validar login</div>
+          <div class="proc anim">Registrar recarga</div>
+          <div class="proc anim">Registrar mesa</div>
+          <div class="proc anim">Registrar mano</div>
+          <div class="proc anim">Registrar jugadores en mano</div>
+          <div class="proc anim">Validar fichas del usuario</div>
+          <div class="proc anim">Registrar acción</div>
+          <div class="proc anim">Consultar última acción</div>
+          <div class="proc anim">Finalizar mano</div>
+          <div class="proc anim">Aumentar saldo post-mano</div>
+          <div class="proc anim">Cambiar datos personales</div>
+          <div class="proc anim">Buscar mesas disponibles</div>
+          <div class="proc anim">Cerrar mesa</div>
+        </div>
+      </div>
+      <div class="slide-num">07 / 10</div>
+    </section>
+
+    <!-- 08 · DECISIONES -->
+    <section class="slide" data-title="Decisiones">
+      <div class="slide-meta">Decisiones</div>
+      <div class="slide-content">
+        <div class="slide-header anim">
+          <h2 class="slide-title">Decisiones de <em>diseño</em></h2>
+        </div>
+        <div class="decisions">
+          <div class="decision anim">
+            <div class="decision-num">Decisión 01</div>
+            <div class="decision-text">El <em>ganador</em> no se guarda explícitamente.</div>
+            <div class="decision-detail">Se deduce comparando cartas con treys al cerrar la mano, leyendo <code>usuarios_mano</code>.</div>
+          </div>
+          <div class="decision anim">
+            <div class="decision-num">Decisión 02</div>
+            <div class="decision-text">Cartas comunitarias en <em>formato treys</em>.</div>
+            <div class="decision-detail">Ejemplo: <code>Qs</code>, <code>4h</code>. Campos <code>nvarchar(3)</code>.</div>
+          </div>
+          <div class="decision anim">
+            <div class="decision-num">Decisión 03</div>
+            <div class="decision-text">El estado <em>temporal</em> vive solo en memoria.</div>
+            <div class="decision-detail">Mazo, turno y pot nunca tocan la BD hasta que la mano termina.</div>
+          </div>
+          <div class="decision anim">
+            <div class="decision-num">Decisión 04</div>
+            <div class="decision-text">Número de tarjeta guardado en <em>recargas</em>.</div>
+            <div class="decision-detail">Para manejo de disputas y trazabilidad de pagos.</div>
+          </div>
+          <div class="decision anim">
+            <div class="decision-num">Decisión 05</div>
+            <div class="decision-text">Tutoriales <em>hardcodeados</em> en el cliente.</div>
+            <div class="decision-detail">Viven en PyGame para reducir complejidad de la BD y del backend.</div>
+          </div>
+          <div class="decision anim">
+            <div class="decision-num">Decisión 06</div>
+            <div class="decision-text">Persistencia <em>en bloque</em> al final de la mano.</div>
+            <div class="decision-detail">Un único UPDATE cierra la mano y vuelca todo el estado acumulado.</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-num">08 / 10</div>
+    </section>
+
+    <!-- 09 · PENDIENTES -->
+    <section class="slide" data-title="Pendientes">
+      <div class="slide-meta">Pendientes</div>
+      <div class="slide-content">
+        <div class="slide-header anim">
+          <h2 class="slide-title">Lo que <em>falta</em> decidir</h2>
+        </div>
+        <div class="pending">
+          <div class="pending-item anim">
+            <div class="pending-q">?</div>
+            <div>
+              <div class="pending-title">Clave: ¿hash o encriptación?</div>
+              <div class="pending-desc">Pendiente consultar con el docente. Hoy está pensada como hash, pero conviene confirmar el criterio de evaluación.</div>
+            </div>
+          </div>
+          <div class="pending-item anim">
+            <div class="pending-q">?</div>
+            <div>
+              <div class="pending-title">SP vs. queries directas</div>
+              <div class="pending-desc">Definir qué interacciones se implementan como procedimientos almacenados y cuáles como consultas directas desde el backend.</div>
+            </div>
+          </div>
+          <div class="pending-item anim">
+            <div class="pending-q">?</div>
+            <div>
+              <div class="pending-title">Campos faltantes en tablas</div>
+              <div class="pending-desc">Fechas de cierre, estados de mesa, marcas de mano activa — todavía no están todos los campos operativos.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-num">09 / 10</div>
+    </section>
+
+    <!-- 10 · CIERRE -->
+    <section class="slide closing" data-title="Gracias">
+      <div class="cover-suits">
+        <div class="suit s1">♠</div>
+        <div class="suit s2">♥</div>
+        <div class="suit s3">♦</div>
+        <div class="suit s4">♣</div>
+      </div>
+      <div class="slide-content" style="justify-content: center; align-items: center;">
+        <div class="closing-suits anim">♠ ♥ ♦ ♣</div>
+        <h2 class="closing-title anim">Gracias por <em>ver</em> el flop.</h2>
+        <div class="cover-line anim"></div>
+        <div class="cover-meta anim" style="margin-top: 2vh;">Flop · Tecnología de Bases de Datos · 2025</div>
+      </div>
+      <div class="slide-num">10 / 10</div>
+    </section>
+
+  </main>
+
+<script>
+  const deck = document.getElementById('deck');
+  const slides = document.querySelectorAll('.slide');
+  const navDots = document.getElementById('navDots');
+
+  slides.forEach((s, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot';
+    dot.setAttribute('aria-label', `Ir a diapositiva ${i + 1}: ${s.dataset.title}`);
+    dot.onclick = () => slides[i].scrollIntoView({ behavior: 'smooth' });
+    navDots.appendChild(dot);
+  });
+
+  const dots = document.querySelectorAll('.nav-dot');
+
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in-view');
+        const idx = Array.from(slides).indexOf(e.target);
+        dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+      }
+    });
+  }, { threshold: 0.5 });
+
+  slides.forEach(s => obs.observe(s));
+
+  let current = 0;
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      e.preventDefault();
+      current = Math.min(current + 1, slides.length - 1);
+      slides[current].scrollIntoView({ behavior: 'smooth' });
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault();
+      current = Math.max(current - 1, 0);
+      slides[current].scrollIntoView({ behavior: 'smooth' });
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      current = 0;
+      slides[current].scrollIntoView({ behavior: 'smooth' });
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      current = slides.length - 1;
+      slides[current].scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+
+  deck.addEventListener('scroll', () => {
+    const idx = Math.round(deck.scrollTop / window.innerHeight);
+    current = idx;
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# A este archivo ponle tus credenciales y le cambias la extension de .txt a .py
+import pyodbc
+
+admin_connection = pyodbc.connect(
+    "DRIVER={ODBC Driver 18 for SQL Server};"
+    "SERVER=localhost;"
+    "DATABASE=flop;"
+    "UID=;"
+    "PWD=;"
+    "TrustServerCertificate=yes;"
+)
