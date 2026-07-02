@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 import pyodbc
+from random import randint
 from server.utils.conection import get_admin_connection as aconn
 from server.schemas.mesa_schemas import (
     MesaCrear,
@@ -116,17 +117,24 @@ def listar_mesas_activas():
 
 @router.post("/mesa/crear")
 def crear_mesa(payload: MesaCrear):
+    codigo = str(randint(10000000, 99999999))  # Asegurar string de 8 dígitos
     try:
         conn = aconn()
         cursor = conn.cursor()
         cursor.execute(
             "EXEC sp_crear_mesa @idUsuario=?, @codigo=?",
             payload.idUsuario,
-            payload.codigo,
+            codigo,
         )
+        resultado = cursor.fetchone()  # Recuperar el idMesa generado
         conn.commit()
         cursor.close()
-        return {"resultado": "ok"}
+        if resultado:
+            return {"resultado": "ok", "idMesa": resultado[0], "codigo": codigo}
+        else:
+            raise HTTPException(
+                status_code=500, detail="No se pudo obtener el id de la mesa"
+            )
     except pyodbc.Error as e:
         raise HTTPException(status_code=400, detail=f"error en crear_mesa: {e}")
 
