@@ -8,6 +8,7 @@ from server.schemas.usuarios_schemas import (
     CambiarClave,
 )
 from typing import List
+import bcrypt
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
@@ -18,11 +19,15 @@ def registrar_usuario(payload: UsuarioRegistrar):
         conn = aconn()
         cursor = conn.cursor()
 
+        clave_hasheada = bcrypt.hashpw(
+            payload.clave.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
+
         cursor.execute(
             "EXEC sp_RegistrarUsuario @nombre=?, @email=?, @clave=?",
             payload.nombre,
             payload.email,
-            payload.clave,
+            clave_hasheada,
         )
 
         conn.commit()
@@ -41,18 +46,23 @@ def acceder(payload: UsuarioAcceder):
         cursor = conn.cursor()
 
         cursor.execute(
-            "EXEC sp_ValidarLogin @email=?, @clave=?",
+            "SELECT id, nombre, email, clave, activo FROM tUsuarios WHERE email = ?",
             payload.email,
-            payload.clave,
         )
-
-        resultado = cursor.fetchone()
+        fila = cursor.fetchone()
         cursor.close()
 
-        if resultado:
-            return {"resultado": list(resultado)}
-        else:
+        if not fila:
             raise HTTPException(status_code=404, detail="No se encontró nada")
+
+        clave_hash_guardada = fila.clave  # pyodbc permite acceder por nombre de columna
+
+        if not bcrypt.checkpw(
+            payload.clave.encode("utf-8"), clave_hash_guardada.encode("utf-8")
+        ):
+            raise HTTPException(status_code=404, detail="No se encontró nada")
+
+        return {"resultado": list(fila)}
     except pyodbc.Error as e:
         raise HTTPException(
             status_code=400, detail=f"Error en el endpoint de validar login: {e}"
