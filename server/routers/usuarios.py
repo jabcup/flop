@@ -19,7 +19,7 @@ def registrar_usuario(payload: UsuarioRegistrar):
         cursor = conn.cursor()
 
         cursor.execute(
-            "EXEC sp_registrar_usuario @nombre=?, @email=?, @clave=?",
+            "EXEC sp_RegistrarUsuario @nombre=?, @email=?, @clave=?",
             payload.nombre,
             payload.email,
             payload.clave,
@@ -65,7 +65,7 @@ def listar_usuarios():
         conn = aconn()
         cursor = conn.cursor()
 
-        cursor.execute("EXEC sp_listar_usuarios")
+        cursor.execute("EXEC sp_ListarUsuarios")
         usuarios = cursor.fetchall()
         cursor.close()
 
@@ -81,7 +81,7 @@ def obtener_usuario(id_usuario: int):
         conn = aconn()
         cursor = conn.cursor()
 
-        cursor.execute("EXEC sp_obtener_usuario_id @id=?", id_usuario)
+        cursor.execute("EXEC sp_ObtenerUsuarioPorId @id=?", id_usuario)
         usuario = cursor.fetchone()
         cursor.close()
 
@@ -100,7 +100,7 @@ def actualizar_datos(id_usuario: int, payload: UsuarioActualizar):
         cursor = conn.cursor()
 
         cursor.execute(
-            "EXEC sp_actualizar_datos_personales @id=?, @nombre=?, @email=?",
+            "EXEC sp_ActualizarDatosPersonales @id=?, @nombre=?, @email=?",
             id_usuario,
             payload.nombre,
             payload.email,
@@ -120,7 +120,7 @@ def cambiar_clave(id_usuario: int, payload: CambiarClave):
         cursor = conn.cursor()
 
         cursor.execute(
-            "EXEC sp_cambiar_clave @id=?, @clave_actual=?, @clave_nueva=?",
+            "EXEC sp_CambiarClave @id=?, @claveActual=?, @claveNueva=?",
             id_usuario,
             payload.clave_actual,
             payload.clave_nueva,
@@ -139,7 +139,7 @@ def activar_usuario(id_usuario: int):
         conn = aconn()
         cursor = conn.cursor()
 
-        cursor.execute("EXEC sp_activar_usuario @id=?", id_usuario)
+        cursor.execute("EXEC sp_ActivarUsuario @id=?", id_usuario)
         conn.commit()
         cursor.close()
         return {"resultado": "ok"}
@@ -153,7 +153,7 @@ def desactivar_usuario(id_usuario: int):
         conn = aconn()
         cursor = conn.cursor()
 
-        cursor.execute("EXEC sp_desactivar_usuario @id=?", id_usuario)
+        cursor.execute("EXEC sp_DesactivarUsuario @id=?", id_usuario)
         conn.commit()
         cursor.close()
         return {"resultado": "ok"}
