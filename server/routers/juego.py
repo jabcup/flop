@@ -432,3 +432,13 @@ def ejecutar_accion(payload: AccionRequest):
         return {"resultado": "ok"}
     except pyodbc.Error as e:
         raise HTTPException(status_code=400, detail=f"error en accion: {e}")
+
+
+@router.get("/mesa/{id_mesa}/espera")
+def ver_espera(id_mesa: int):
+    conn = aconn()
+    cursor = conn.cursor()
+    cursor.execute("SELECT idUsuario FROM tEsperaMesa WHERE idMesa = ?", id_mesa)
+    usuarios = [row[0] for row in cursor.fetchall()]
+    cursor.close()
+    return {"usuarios_en_espera": usuarios}

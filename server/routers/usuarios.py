@@ -41,7 +41,7 @@ def acceder(payload: UsuarioAcceder):
         cursor = conn.cursor()
 
         cursor.execute(
-            "EXEC sp_validar_login @email=?, @clave=?",
+            "EXEC sp_ValidarLogin @email=?, @clave=?",
             payload.email,
             payload.clave,
         )

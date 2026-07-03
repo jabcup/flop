@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLOP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --purple: #B926E8;
+            --yellow: #F9CA24;
+            --dark-purple: #1C0A26;
+            --black: #0A0A0A;
+            --orange: #D35400;
+            --red: #C0392B;
+            --white: #F0F0F0;
+            --green: #27AE60;
+        }
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: var(--black);
+            color: var(--white);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
+            pointer-events: none; z-index: 9999;
+        }
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.2) 100%);
+            pointer-events: none; z-index: 9998;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
+        .logo-diamond {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, var(--purple), var(--dark-purple));
+            transform: rotate(45deg);
+            border: 3px solid var(--yellow);
+            box-shadow: 0 0 10px var(--purple);
+            display: flex; align-items: center; justify-content: center;
+            margin: 20px;
+        }
+        .logo-diamond span { transform: rotate(-45deg); font-size: 8px; text-align: center; color: var(--yellow); }
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px; border-bottom: 3px solid var(--purple); margin-bottom: 40px;
+        }
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        .logo-text { font-size: 20px; color: var(--yellow); text-shadow: 3px 3px 0px var(--purple); letter-spacing: 2px; }
+        .btn {
+            font-family: 'Press Start 2P', cursive;
+            background-color: var(--black); color: var(--yellow);
+            border: 3px solid var(--purple); padding: 15px 25px; font-size: 12px;
+            cursor: pointer; text-transform: uppercase;
+            box-shadow: 4px 4px 0px var(--dark-purple); transition: all 0.1s;
+            text-decoration: none; display: inline-block; text-align: center;
+        }
+        .btn:hover { border-color: var(--yellow); color: var(--purple); transform: translate(2px,2px); box-shadow: 2px 2px 0px var(--dark-purple); }
+        .btn:active { background-color: var(--yellow); color: var(--black); transform: translate(4px,4px); box-shadow: none; }
+        .btn-secondary { border-color: var(--yellow); color: var(--white); }
+        .btn-warning { border-color: var(--orange); color: var(--orange); }
+        .btn-small { padding: 10px 15px; font-size: 8px; }
+        .btn-disabled { opacity: 0.4; pointer-events: none; }
+        .view { display: none; min-height: 80vh; animation: fadeIn 0.3s; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .dashboard-content { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 40px; }
+        .menu-hamburger { display: flex; flex-direction: column; gap: 8px; cursor: pointer; padding: 20px; border: 3px solid var(--purple); background: var(--dark-purple); }
+        .menu-hamburger:hover { border-color: var(--yellow); }
+        .menu-line { width: 40px; height: 6px; background-color: var(--yellow); box-shadow: 2px 2px 0 var(--purple); }
+        .form-container { max-width: 500px; margin: 0 auto; padding: 40px; border: 4px solid var(--purple); background-color: var(--dark-purple); box-shadow: 8px 8px 0 var(--black); }
+        .form-title { font-size: 16px; color: var(--yellow); margin-bottom: 30px; text-align: center; text-transform: uppercase; }
+        .form-group { margin-bottom: 25px; }
+        .form-label { display: block; font-size: 10px; color: var(--purple); margin-bottom: 10px; text-transform: uppercase; }
+        .form-input { width: 100%; padding: 15px; font-family: 'Press Start 2P', cursive; font-size: 10px; background-color: var(--black); border: 3px solid var(--purple); color: var(--white); outline: none; }
+        .form-input:focus { border-color: var(--yellow); box-shadow: 0 0 10px var(--purple); }
+        .cards-menu { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 60px; perspective: 1000px; }
+        .card-option {
+            width: 220px; height: 300px;
+            background: linear-gradient(135deg, var(--dark-purple), var(--black));
+            border: 4px solid var(--purple);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.3s;
+            position: relative; transform-style: preserve-3d;
+            box-shadow: 6px 6px 0 var(--black);
+        }
+        .card-option:nth-child(1) { transform: rotate(-5deg); }
+        .card-option:nth-child(2) { transform: rotate(-2deg); z-index: 2; border-color: var(--yellow); }
+        .card-option:nth-child(3) { transform: rotate(2deg); z-index: 1; }
+        .card-option:nth-child(4) { transform: rotate(5deg); }
+        .card-option:hover { transform: rotate(0deg) translateY(-20px) scale(1.05); z-index: 10; border-color: var(--yellow); box-shadow: 0 0 20px var(--purple), 10px 10px 0 var(--black); }
+        .card-option span { font-size: 11px; text-align: center; color: var(--white); padding: 20px; text-transform: uppercase; line-height: 1.8; }
+        .card-option.black { background: linear-gradient(135deg, #1a1a1a, var(--black)); border-color: var(--yellow); }
+        .card-option.black span { color: var(--yellow); }
+        .stats-panel { display: flex; gap: 30px; margin-bottom: 40px; flex-wrap: wrap; }
+        .stat-box { border: 3px solid var(--purple); padding: 20px; background: var(--dark-purple); min-width: 200px; }
+        .stat-label { font-size: 8px; color: var(--purple); margin-bottom: 10px; }
+        .stat-value { font-size: 14px; color: var(--yellow); }
+        .code-input-container { display: flex; gap: 20px; justify-content: center; align-items: center; margin: 60px 0; }
+        .code-input { width: 400px; padding: 20px; font-family: 'Press Start 2P', cursive; font-size: 14px; background-color: var(--black); border: 4px solid var(--purple); color: var(--yellow); text-align: center; text-transform: uppercase; }
+        .code-input:focus { border-color: var(--yellow); box-shadow: 0 0 15px var(--purple); }
+        .info-section { margin: 30px 0; padding: 20px; border-left: 4px solid var(--yellow); background: var(--dark-purple); }
+        .info-label { font-size: 10px; color: var(--purple); margin-bottom: 10px; }
+        .info-value { font-size: 12px; color: var(--white); }
+        .text-center { text-align: center; }
+        .mt-20 { margin-top: 20px; }
+        .mb-20 { margin-bottom: 20px; }
+
+        /* Estilos del juego */
+        .game-table {
+            background: radial-gradient(ellipse at center, #1a472a 0%, #0a1f12 100%);
+            border: 6px solid var(--purple);
+            border-radius: 50%;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            position: relative;
+            min-height: 500px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        .community-cards {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 60px 0 40px;
+        }
+        .card {
+            width: 70px;
+            height: 100px;
+            background: var(--white);
+            border: 3px solid var(--black);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: var(--black);
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+        }
+        .card.red { color: var(--red); }
+        .card.back {
+            background: linear-gradient(135deg, var(--purple), var(--dark-purple));
+            color: var(--yellow);
+            border-color: var(--yellow);
+        }
+        .card-value { font-size: 18px; font-weight: bold; }
+        .card-suit { font-size: 24px; }
+        .player-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 30px 0;
+            padding: 20px;
+        }
+        .player-hand {
+            display: flex;
+            gap: 10px;
+        }
+        .player-info {
+            text-align: center;
+        }
+        .player-name { font-size: 10px; color: var(--white); margin-bottom: 10px; }
+        .player-chips { font-size: 8px; color: var(--yellow); }
+        .pot-display {
+            text-align: center;
+            font-size: 12px;
+            color: var(--yellow);
+            margin: 20px 0;
+        }
+        .actions-bar {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .status-message {
+            text-align: center;
+            font-size: 14px;
+            color: var(--yellow);
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid var(--yellow);
+            background: rgba(0,0,0,0.5);
+        }
+        @media (max-width: 768px) {
+            .cards-menu { flex-direction: column; align-items: center; }
+            .card-option { width: 100%; max-width: 300px; transform: none !important; }
+            .code-input { width: 100%; font-size: 10px; }
+            .header { flex-direction: column; gap: 20px; }
+            .game-table { border-radius: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- DASHBOARD -->
+<div id="view-dashboard" class="view active">
+    <div class="container">
+        <div class="dashboard-content">
+            <div class="logo-diamond"><span>FLOP</span></div>
+            <div class="menu-hamburger" onclick="navigateTo('menu')">
+                <div class="menu-line"></div><div class="menu-line"></div><div class="menu-line"></div>
+            </div>
+            <button class="btn" onclick="navigateTo('login')">ENTRAR</button>
+        </div>
+    </div>
+</div>
+
+<!-- LOGIN -->
+<div id="view-login" class="view">
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="logo-diamond" style="width:50px;height:50px;"><span style="font-size:6px;">FLOP</span></div>
+                <div class="logo-text">FLOP</div>
+            </div>
+            <button class="btn btn-secondary" onclick="navigateTo('dashboard')">VOLVER</button>
+        </div>
+        <div class="form-container">
+            <h2 class="form-title">INICIAR SESION</h2>
+            <div class="form-group">
+                <label class="form-label">EMAIL</label>
+                <input type="email" id="login-email" class="form-input" placeholder="tu@email.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">CLAVE</label>
+                <input type="password" id="login-password" class="form-input" placeholder="********">
+            </div>
+            <div id="login-error" style="color:var(--red);font-size:8px;margin-bottom:15px;display:none;"></div>
+            <div class="text-center mt-20">
+                <button class="btn" onclick="doLogin()" style="width:100%;">ENTRAR</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN MENU -->
+<div id="view-menu" class="view">
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="logo-diamond" style="width:50px;height:50px;"><span style="font-size:6px;">FLOP</span></div>
+                <div class="logo-text">FLOP</div>
+            </div>
+            <span style="font-size:8px;color:var(--purple);" id="menu-user-email"></span>
+            <button class="btn btn-warning" onclick="logout()">SALIR</button>
+        </div>
+        <div class="cards-menu">
+            <div class="card-option" onclick="navigateTo('create-mesa')">
+                <span>CREAR<br>MESA</span>
+            </div>
+            <div class="card-option black" onclick="navigateTo('join')">
+                <span>UNIRSE A<br>MESA</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CREATE MESA -->
+<div id="view-create-mesa" class="view">
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="logo-diamond" style="width:50px;height:50px;"><span style="font-size:6px;">FLOP</span></div>
+                <div class="logo-text">FLOP</div>
+            </div>
+            <button class="btn btn-secondary" onclick="navigateTo('menu')">VOLVER</button>
+        </div>
+        <div class="text-center">
+            <h2 class="form-title mt-20">MESA CREADA</h2>
+            <div class="info-section">
+                <div class="info-label">CODIGO DE MESA:</div>
+                <div class="info-value" id="created-code" style="font-size:24px;color:var(--yellow);">-----</div>
+            </div>
+            <p style="font-size:8px;margin:20px;">Esperando oponente...</p>
+            <div id="lobby-status" style="font-size:8px;color:var(--purple);">Jugadores en espera: 1</div>
+            <button class="btn mt-20" id="btn-arrancar" onclick="arrancarPartida()" style="display:none;">ARRANCAR PARTIDA</button>
+        </div>
+    </div>
+</div>
+
+<!-- JOIN GAME -->
+<div id="view-join" class="view">
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="logo-diamond" style="width:50px;height:50px;"><span style="font-size:6px;">FLOP</span></div>
+                <div class="logo-text">FLOP</div>
+            </div>
+            <button class="btn btn-secondary" onclick="navigateTo('menu')">VOLVER</button>
+        </div>
+        <div class="text-center">
+            <div class="code-input-container">
+                <input type="text" id="join-code" class="code-input" placeholder="CODIGO DE MESA" maxlength="10">
+                <button class="btn" onclick="unirseMesa()">ENTRAR</button>
+            </div>
+            <div id="join-error" style="color:var(--red);font-size:8px;display:none;"></div>
+            <p style="font-size:8px;margin-top:20px;">Esperando que el anfitrión arranque...</p>
+            <div id="join-lobby-status" style="font-size:8px;color:var(--purple);"></div>
+        </div>
+    </div>
+</div>
+
+<!-- GAME VIEW -->
+<div id="view-game" class="view">
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="logo-diamond" style="width:50px;height:50px;"><span style="font-size:6px;">FLOP</span></div>
+                <div class="logo-text">FLOP</div>
+            </div>
+            <span id="game-phase" style="font-size:8px;color:var(--yellow);"></span>
+            <button class="btn btn-warning" onclick="salirPartida()">SALIR</button>
+        </div>
+        <div class="game-table">
+            <!-- Cartas comunitarias -->
+            <div class="community-cards" id="community-cards">
+                <div class="card back"><span>?</span></div>
+                <div class="card back"><span>?</span></div>
+                <div class="card back"><span>?</span></div>
+                <div class="card back"><span>?</span></div>
+                <div class="card back"><span>?</span></div>
+            </div>
+            <!-- Oponente -->
+            <div class="player-area">
+                <div class="player-info">
+                    <div class="player-name">OPONENTE</div>
+                    <div class="player-hand" id="opponent-hand">
+                        <div class="card back"><span>?</span></div>
+                        <div class="card back"><span>?</span></div>
+                    </div>
+                    <div class="player-chips" id="opponent-chips">Fichas: 100</div>
+                </div>
+            </div>
+            <!-- Pozo -->
+            <div class="pot-display">POZO: <span id="pot-value">0</span></div>
+            <!-- Jugador actual -->
+            <div class="player-area">
+                <div class="player-info">
+                    <div class="player-name">TU</div>
+                    <div class="player-hand" id="my-hand">
+                        <div class="card back"><span>?</span></div>
+                        <div class="card back"><span>?</span></div>
+                    </div>
+                    <div class="player-chips" id="my-chips">Fichas: 100</div>
+                </div>
+            </div>
+            <!-- Mensaje de turno / ganador -->
+            <div id="game-message" class="status-message" style="display:none;"></div>
+            <!-- Acciones -->
+            <div class="actions-bar" id="actions-bar">
+                <button class="btn btn-small" onclick="enviarAccion(1)">FOLD</button>
+                <button class="btn btn-small" onclick="enviarAccion(2)">CHECK</button>
+                <button class="btn btn-small" onclick="enviarAccion(3)">CALL</button>
+                <button class="btn btn-small" onclick="enviarAccion(4)">RAISE</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ---------- ESTADO GLOBAL ----------
+const API = 'http://localhost:8001';
+let state = {
+    idUsuario: null,
+    email: null,
+    idMesa: null,
+    codigoMesa: null,
+    idPartida: null,
+    soyAnfitrion: false,
+    pollingInterval: null
+};
+
+// ---------- NAVEGACION ----------
+function navigateTo(viewName) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    const el = document.getElementById(`view-${viewName}`);
+    if (el) el.classList.add('active');
+    // Lógica específica al entrar a vistas
+    if (viewName === 'menu' && state.email) {
+        document.getElementById('menu-user-email').textContent = state.email;
+    }
+    if (viewName === 'create-mesa') crearMesa();
+    if (viewName === 'game') iniciarPollingJuego();
+}
+
+// ---------- LOGIN ----------
+async function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const clave = document.getElementById('login-password').value.trim();
+    document.getElementById('login-error').style.display = 'none';
+    try {
+        const res = await fetch(`${API}/usuarios/acceder`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({email, clave})
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Error de login');
+        }
+        const data = await res.json();
+        // El endpoint devuelve {resultado: [id, email, ...]} o similar.
+        // Asumimos que el primer valor del array es el idUsuario.
+        const arr = data.resultado;
+        state.idUsuario = arr[0];
+        state.email = email;
+        navigateTo('menu');
+    } catch(e) {
+        document.getElementById('login-error').textContent = e.message;
+        document.getElementById('login-error').style.display = 'block';
+    }
+}
+
+function logout() {
+    clearInterval(state.pollingInterval);
+    state = {idUsuario:null,email:null,idMesa:null,codigoMesa:null,idPartida:null,soyAnfitrion:false,pollingInterval:null};
+    navigateTo('dashboard');
+}
+
+// ---------- CREAR MESA ----------
+async function crearMesa() {
+    try {
+        const res = await fetch(`${API}/juego/mesa/crear`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({idUsuario: state.idUsuario, codigo: ''})
+        });
+        const data = await res.json();
+        state.idMesa = data.idMesa;
+        state.codigoMesa = data.codigo;
+        state.soyAnfitrion = true;
+        document.getElementById('created-code').textContent = data.codigo;
+        // Auto-unirse como anfitrión
+        await fetch(`${API}/juego/mesa/unirse`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({idUsuario: state.idUsuario, idMesa: data.idMesa})
+        });
+        // Empezar a verificar si ya hay 2 jugadores
+        checkLobby();
+    } catch(e) {
+        alert('Error al crear mesa: ' + e.message);
+    }
+}
+
+async function checkLobby() {
+    const interval = setInterval(async () => {
+        try {
+            const res = await fetch(`${API}/juego/mesa/jugadores/${state.idMesa}`);
+            const data = await res.json();
+            const jugadores = data.resultado || [];
+            document.getElementById('lobby-status').textContent = `Jugadores en espera: ${jugadores.length}`;
+            if (jugadores.length >= 2 && state.soyAnfitrion) {
+                document.getElementById('btn-arrancar').style.display = 'inline-block';
+            }
+        } catch(e) {}
+    }, 2000);
+    // Guardamos referencia para limpiarlo después
+    state._lobbyInterval = interval;
+}
+
+// ---------- UNIRSE A MESA ----------
+async function unirseMesa() {
+    const codigo = document.getElementById('join-code').value.trim();
+    document.getElementById('join-error').style.display = 'none';
+    try {
+        // Validar código
+        const res = await fetch(`${API}/juego/mesa/validar-codigo/${codigo}`);
+        if (!res.ok) throw new Error('Mesa no encontrada');
+        const data = await res.json();
+        const idMesa = data.resultado[0]; // primer campo del array
+        state.idMesa = idMesa;
+        state.codigoMesa = codigo;
+        state.soyAnfitrion = false;
+        // Unirse
+        await fetch(`${API}/juego/mesa/unirse`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({idUsuario: state.idUsuario, idMesa})
+        });
+        // Esperar a que arranque
+        checkPartidaActiva();
+    } catch(e) {
+        document.getElementById('join-error').textContent = e.message;
+        document.getElementById('join-error').style.display = 'block';
+    }
+}
+
+async function checkPartidaActiva() {
+    const interval = setInterval(async () => {
+        try {
+            const res = await fetch(`${API}/juego/partida/activa/${state.idMesa}`);
+            const data = await res.json();
+            if (data.existePartidaActiva && data.idPartida) {
+                clearInterval(interval);
+                state.idPartida = data.idPartida;
+                navigateTo('game');
+            }
+        } catch(e) {}
+    }, 2000);
+    state._joinInterval = interval;
+}
+
+// ---------- ARRANCAR PARTIDA ----------
+async function arrancarPartida() {
+    try {
+        clearInterval(state._lobbyInterval);
+        const res = await fetch(`${API}/juego/partida/arrancar`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({idMesa: state.idMesa})
+        });
+        const data = await res.json();
+        state.idPartida = data.idPartida;
+        navigateTo('game');
+    } catch(e) {
+        alert('Error al arrancar: ' + e.message);
+    }
+}
+
+// ---------- JUEGO: POLLING ----------
+function iniciarPollingJuego() {
+    if (state.pollingInterval) clearInterval(state.pollingInterval);
+    state.pollingInterval = setInterval(pollEstado, 2000);
+    pollEstado(); // inmediata
+}
+
+async function pollEstado() {
+    if (!state.idPartida) return;
+    try {
+        const res = await fetch(`${API}/juego/partida/${state.idPartida}/estado?usuario=${state.idUsuario}`);
+        const data = await res.json();
+        const s = data.resultado; // objeto con keys: fase, flop1, flop2, flop3, turn, river, carta1, carta2, pozo, apuesta_actual, fichas, fichas_oponente, turno, acciones, ganador, monto_ganado
+        renderGame(s);
+    } catch(e) { console.error('Polling error:', e); }
+}
+
+function renderGame(s) {
+    // Fase
+    document.getElementById('game-phase').textContent = s.fase?.toUpperCase() || '';
+
+    // Cartas comunitarias
+    const commDiv = document.getElementById('community-cards');
+    const commCards = [s.flop1, s.flop2, s.flop3, s.turn, s.river];
+    const faseRevela = {
+        'Preflop': 0, 'Flop': 3, 'Turn': 4, 'River': 5, 'Showdown': 5, 'Finalizada': 5
+    };
+    const revelar = faseRevela[s.fase] || 0;
+    commDiv.innerHTML = commCards.map((c, i) => {
+        if (i < revelar && c) return renderCard(c);
+        return '<div class="card back"><span>?</span></div>';
+    }).join('');
+
+    // Mis cartas (siempre visibles para el jugador)
+    document.getElementById('my-hand').innerHTML = [s.carta1, s.carta2].map(c => c ? renderCard(c) : '<div class="card back"><span>?</span></div>').join('');
+
+    // Cartas del oponente (solo en showdown o finalizada)
+    const oppHandDiv = document.getElementById('opponent-hand');
+    if (s.fase === 'Showdown' || s.fase === 'Finalizada') {
+        // No tenemos cartas del oponente en el estado; dejamos ocultas con ?. 
+        // Podríamos hacer otro endpoint, pero para demo simplificamos.
+        oppHandDiv.innerHTML = '<div class="card back"><span>?</span></div><div class="card back"><span>?</span></div>';
+    } else {
+        oppHandDiv.innerHTML = '<div class="card back"><span>?</span></div><div class="card back"><span>?</span></div>';
+    }
+
+    // Fichas
+    document.getElementById('my-chips').textContent = 'Fichas: ' + (s.fichas || 0);
+    document.getElementById('opponent-chips').textContent = 'Fichas: ' + (s.fichas_oponente || 0);
+
+    // Pozo
+    document.getElementById('pot-value').textContent = s.pozo || 0;
+
+    // Mensaje de turno o ganador
+    const msgDiv = document.getElementById('game-message');
+    const actionsBar = document.getElementById('actions-bar');
+    if (s.fase === 'Finalizada' || s.ganador) {
+        msgDiv.style.display = 'block';
+        msgDiv.textContent = s.ganador === state.idUsuario ? '¡GANASTE! +' + (s.monto_ganado || 0) : 'PERDISTE';
+        msgDiv.style.color = s.ganador === state.idUsuario ? 'var(--green)' : 'var(--red)';
+        actionsBar.style.display = 'none';
+    } else if (s.turno === state.idUsuario) {
+        msgDiv.style.display = 'block';
+        msgDiv.textContent = 'ES TU TURNO';
+        msgDiv.style.color = 'var(--yellow)';
+        actionsBar.style.display = 'flex';
+        // Habilitar/deshabilitar botones según acciones válidas
+        const acciones = s.acciones ? s.acciones.split(',') : [];
+        document.querySelectorAll('#actions-bar .btn').forEach(b => b.classList.remove('btn-disabled'));
+        if (!acciones.includes('fold')) document.querySelector('#actions-bar .btn:nth-child(1)').classList.add('btn-disabled');
+        if (!acciones.includes('check')) document.querySelector('#actions-bar .btn:nth-child(2)').classList.add('btn-disabled');
+        if (!acciones.includes('call')) document.querySelector('#actions-bar .btn:nth-child(3)').classList.add('btn-disabled');
+        if (!acciones.includes('raise')) document.querySelector('#actions-bar .btn:nth-child(4)').classList.add('btn-disabled');
+    } else {
+        msgDiv.style.display = 'block';
+        msgDiv.textContent = 'ESPERANDO OPONENTE...';
+        msgDiv.style.color = 'var(--purple)';
+        actionsBar.style.display = 'none';
+    }
+}
+
+function renderCard(cardStr) {
+    if (!cardStr || cardStr.length < 2) return '<div class="card back"><span>?</span></div>';
+    const valor = cardStr.slice(0, -1);
+    const palo = cardStr.slice(-1).toLowerCase();
+    const simbolos = {c: '♣', d: '♦', h: '♥', s: '♠'};
+    const simbolo = simbolos[palo] || palo;
+    const isRed = (palo === 'h' || palo === 'd');
+    return `<div class="card ${isRed ? 'red' : ''}"><span class="card-value">${valor}</span><span class="card-suit">${simbolo}</span></div>`;
+}
+
+// ---------- ACCIONES ----------
+async function enviarAccion(idTipoAccion) {
+    try {
+        const res = await fetch(`${API}/juego/partida/accion`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                idPartida: state.idPartida,
+                idUsuario: state.idUsuario,
+                idTipoAccion,
+                monto: null
+            })
+        });
+        const data = await res.json();
+        if (data.resultado === 'showdown') {
+            // Ya se resolvió, forzar polling
+            pollEstado();
+        } else {
+            pollEstado();
+        }
+    } catch(e) {
+        alert('Error en acción: ' + e.message);
+    }
+}
+
+function salirPartida() {
+    clearInterval(state.pollingInterval);
+    state.idPartida = null;
+    navigateTo('menu');
+}
+
+// ---------- INICIO ----------
+document.addEventListener('DOMContentLoaded', () => {
+    navigateTo('dashboard');
+});
+</script>
+</body>
+</html>
